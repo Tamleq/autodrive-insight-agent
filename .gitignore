@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.venv/
+venv/
+
+# FastAPI / local env
+.env
+.env.*
+
+# Node / Vite
+node_modules/
+dist/
+.vite/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Reports and generated assets
+reports/*.md
+screenshots/*.png
+screenshots/*.jpg
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
