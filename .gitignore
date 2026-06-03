@@ -30,3 +30,5 @@ screenshots/*.jpg
 Thumbs.db
 .idea/
 .vscode/
+
+*.log
