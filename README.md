@@ -1,242 +1,112 @@
 # AutoDrive Insight Agent
 
-AutoDrive Insight Agent is an AI product demo for intelligent driving production data analysis. It showcases an end-to-end workflow for automatic abnormal event screening, severity grading, AI-assisted root cause analysis, and report generation.
+## 1. 项目名称
 
-## Project Positioning
+**AutoDrive Insight Agent** 是一个面向智能驾驶量产回传数据分析场景的 AI Agent 项目 Demo。
 
-This project targets intelligent driving mass-production feedback data scenarios. The current demo uses mock driving events and reserved module boundaries so the system can later evolve into a full pipeline with CSV data loading, rule-based event detection, S/A/B/C/D severity grading, Mock or real LLM analysis, and Markdown report generation.
+项目聚焦“异常事件自动筛选 -> 规则引擎命中 -> 严重度分级 -> LLM 辅助分析 -> Markdown 报告生成”的闭环流程，用模拟数据展示智能驾驶问题分析平台的基础形态。
 
-## Current Status
+> 说明：本项目使用的是模拟智能驾驶事件数据，不包含真实车企、真实车辆或真实用户数据。
 
-This version completes the local base skeleton only:
+## 2. 项目简介
 
-- FastAPI backend with health check and mock API routes
-- Skill-style backend modules for data loading, rule engine, severity grading, LLM analysis, and report generation
-- React + TypeScript + Vite frontend
-- Ant Design layout with Dashboard, Event List, Event Detail, and Report pages
-- Data, reports, docs, and screenshots directories reserved for future modules
+AutoDrive Insight Agent 用于演示如何把智能驾驶量产回传事件转化为可筛选、可分级、可解释、可生成报告的分析工作流。
 
-## Backend Startup
+当前版本包含 FastAPI 后端、React 前端、CSV 模拟数据集、规则引擎、严重度评分模型、Mock LLM 分析模块、Agent Orchestrator 以及 Markdown 报告生成能力。项目重点不在“替代安全工程师判断”，而是展示如何通过 AI Agent 和 Skill 编排，把重复的数据初筛、证据整理和报告撰写动作自动化。
 
-```bash
-cd autodrive-insight-agent/backend
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
+## 3. 项目背景
 
-Health check:
+智能驾驶系统在量产后会持续产生回传事件，例如 AEB 触发、驾驶员接管、低 TTC、车道线置信度下降、目标识别置信度波动、规划轨迹异常等。工程分析通常需要完成几类重复工作：
 
-```bash
-curl http://127.0.0.1:8000/health
-```
+- 从大量事件中筛选疑似异常样本
+- 根据触发条件和车辆信号识别问题类型
+- 按风险程度进行初步优先级排序
+- 汇总关键证据，辅助后续人工复核
+- 生成结构化分析记录或问题报告
 
-API endpoints:
+本项目用模拟数据搭建一个轻量化分析 Agent，展示上述流程如何被规则引擎、LLM 分析和自动报告生成串联起来。
 
-- `GET /health`
-  - Returns `{"status": "ok", "service": "AutoDrive Insight Agent"}`.
-- `GET /api/events`
-  - Returns the event list.
-  - Supports optional query parameters: `scene_type`, `takeover`, and `aeb_triggered`.
-  - Example: `GET /api/events?takeover=true&aeb_triggered=true`
-- `GET /api/events/{event_id}`
-  - Returns one event by ID.
-  - Returns `404` when the event does not exist.
-- `POST /api/analyze/{event_id}`
-  - Runs `agent_orchestrator.analyze_event(event_id)` and returns the complete analysis result, including event data, matched rules, severity, AI analysis, Markdown report, and report path.
-  - Returns `404` when the event does not exist.
-- `GET /api/report/{event_id}`
-  - Returns the Markdown report as `{"event_id": "...", "report_format": "markdown", "content": "..."}`.
-  - Stable behavior: if `reports/{event_id}_report.md` already exists, the API returns it directly; if it does not exist, the API automatically calls `analyze_event(event_id)` to generate and save the report before returning it.
-  - Returns `404` when the event does not exist.
+## 4. 核心功能
 
-Interactive API docs are available after startup at:
+- **智能驾驶事件数据加载**：从 `data/demo_events.csv` 读取 500 条模拟异常事件，字段覆盖场景、天气、车速、制动、AEB、接管、TTC、感知状态、规划状态等。
+- **自动化筛选**：支持按 `scene_type`、`takeover`、`aeb_triggered` 查询和筛选事件。
+- **规则引擎**：对单个事件执行规则命中，识别急制动、AEB 触发、疑似误刹、高风险接管、车道线异常、低 TTC、规划异常、感知异常等风险信号。
+- **严重度分级**：基于评分因子输出 S/A/B/C/D 等级、分数、原因和触发因子。
+- **LLM 分析**：默认使用 Mock LLM 模式，根据事件、规则命中和严重度生成结构化分析结果；代码中保留真实 LLM 集成入口。
+- **AI Agent 编排**：通过 `agent_orchestrator.py` 串联数据加载、规则筛选、严重度分级、LLM 分析和报告生成。
+- **自动报告生成**：输出 Markdown 事件分析报告，并保存到 `reports/{event_id}_report.md`。
+- **前端展示**：提供 Dashboard、事件列表、事件详情和报告页，用于展示事件、风险分布、规则命中、AI 分析结果和 Markdown 报告。
 
-```text
-http://127.0.0.1:8000/docs
-```
+## 5. 技术栈
 
-## Data Module
+| 层级 | 技术 |
+| --- | --- |
+| Backend | Python, FastAPI, Pydantic, Uvicorn |
+| Agent / Skills | data_loader, rule_engine, severity_grader, llm_analyzer, report_generator, agent_orchestrator |
+| Data | CSV 模拟数据集 |
+| Frontend | React, TypeScript, Vite |
+| UI | Ant Design, lucide-react, Recharts |
+| Test | pytest |
+| Report | Markdown |
 
-The demo intelligent-driving event dataset is stored in `data/demo_events.csv`.
-It contains 500 simulated abnormal events with event IDs from `EVT_0001` to
-`EVT_0500`, covering urban intersection false braking, highway following hard
-braking, rainy lane-confidence degradation, nighttime pedestrian miss detection,
-ramp planning offset, construction-zone lane recognition anomalies, ACC
-following instability, NOA exit, driver takeover, and AEB false trigger cases.
-
-`backend/skills/data_loader.py` provides:
-
-- `load_events()`
-- `get_event_by_id(event_id)`
-- `filter_events(scene_type=None, takeover=None, aeb_triggered=None)`
-
-Numeric driving metrics are converted to `float` after CSV loading, while
-`takeover` and `aeb_triggered` are converted to `bool`.
-
-## Frontend Startup
-
-```bash
-cd autodrive-insight-agent/frontend
-npm install
-npm run dev
-```
-
-Vite will serve the frontend at:
+## 6. 系统架构
 
 ```text
-http://localhost:5173
+autodrive-insight-agent/
+├── backend/
+│   ├── main.py                    # FastAPI API 入口
+│   ├── agent_orchestrator.py      # Agent 工作流编排
+│   ├── models/
+│   │   └── schemas.py             # API 响应模型
+│   ├── skills/
+│   │   ├── data_loader.py         # 模拟数据加载与筛选
+│   │   ├── rule_engine.py         # 规则引擎
+│   │   ├── severity_grader.py     # 严重度分级
+│   │   ├── llm_analyzer.py        # Mock LLM 分析
+│   │   └── report_generator.py    # Markdown 报告生成
+│   └── tests/                     # 后端单元测试与 API 测试
+├── data/
+│   └── demo_events.csv            # 模拟智能驾驶事件数据
+├── frontend/
+│   └── src/                       # React 前端页面与组件
+├── reports/                       # 生成的 Markdown 报告
+├── docs/                          # 文档说明
+└── screenshots/                   # 页面截图占位
 ```
 
-## Testing
+后端以 Skill 模块拆分核心能力，Agent Orchestrator 负责把各模块组织成一个稳定的分析链路。前端通过 Vite 代理调用 FastAPI 接口，展示事件列表、风险概览、分析详情和报告内容。
 
-Backend test dependencies are included in `backend/requirements.txt`.
-
-```bash
-cd autodrive-insight-agent/backend
-pytest
-```
-
-Data module checks can be run from the repository root:
-
-```bash
-python -m compileall backend
-python -m pytest backend/tests/test_data_loader.py
-```
-
-API checks can be run from the repository root:
-
-```bash
-python -m compileall backend
-python -m pytest backend/tests/test_api.py
-```
-
-At this stage, complex business logic has not been implemented yet. The goal is to keep the structure clear and ready for incremental module development.
-
-## Rule Engine
-
-The backend rule engine is implemented in `backend/skills/rule_engine.py`.
-Use `screen_event_rules(event: dict) -> list` to screen one intelligent driving event.
-
-Each matched rule returns:
-
-- `rule_id`
-- `rule_name`
-- `description`
-- `evidence`
-- `risk_score`
-
-Implemented rules:
-
-- `R001` 强制动: `brake_acc <= -3.5`
-- `R002` AEB触发: `aeb_triggered == True`
-- `R003` 疑似误刹: `aeb_triggered == True`, `object_confidence < 0.5`, and `brake_acc <= -3.0`
-- `R004` 高风险接管: `takeover == True` and `ego_speed > 40`
-- `R005` 车道线异常: `lane_confidence < 0.4` and `lateral_offset > 0.5`
-- `R006` TTC过低: `ttc <= 1.5`
-- `R007` 规划异常: `planning_status` contains `abnormal` or `deviation`
-- `R008` 感知异常: `perception_status` contains `unstable`, `lost`, or `low_confidence`
-
-## Severity Grading
-
-The severity grading skill is implemented in `backend/skills/severity_grader.py`.
-Use `grade_severity(event: dict, matched_rules: list) -> dict` to convert one
-screened event into an S/A/B/C/D severity result.
-
-The returned dictionary contains:
-
-- `score`: integer severity score
-- `level`: one of `S`, `A`, `B`, `C`, or `D`
-- `reason`: readable summary of the grading result
-- `factors`: scoring factors triggered by the event
-
-Scoring factors:
-
-- `aeb_triggered == True`: +25
-- `takeover == True`: +25
-- `brake_acc <= -3.5`: +20
-- `ttc <= 1.5`: +20
-- `object_confidence < 0.5`: +10
-- `scene_type` contains `高速` or `城市路口`: +10
-
-Level mapping:
-
-- `S`: score >= 80
-- `A`: score >= 60
-- `B`: score >= 40
-- `C`: score >= 20
-- `D`: score < 20
-
-## Report Generation
-
-报告生成 Skill 位于 `backend/skills/report_generator.py`，用于把单个智能驾驶异常事件、规则命中结果、严重度评级和 AI 分析结果汇总为中文 Markdown 报告。
-
-核心函数：
-
-- `generate_markdown_report(event: dict, matched_rules: list, severity: dict, ai_analysis: dict) -> str`
-- `save_report(event_id: str, report_content: str) -> str`
-
-报告固定包含以下章节：
-
-- 事件基本信息
-- 场景描述
-- 规则命中情况
-- 严重度评级
-- AI 原因分析
-- 关键证据
-- 处理建议
-- 是否建议人工复核
-
-生成内容会包含 `event_id`、`vehicle_id`、`timestamp`、`scene_type`、`weather`、`ego_speed`、`brake_acc`、`ttc`、`severity level` 和 `severity score`。`save_report` 会把报告保存到 `reports/{event_id}_report.md`，当 `reports/` 不存在时会自动创建目录。
-
-可从仓库根目录运行报告生成测试：
-
-```bash
-python -m compileall backend
-python -m pytest backend/tests/test_report_generator.py
-```
-
-## AI Analysis Skill
-
-The AI analysis skill is implemented in `backend/skills/llm_analyzer.py`.
-Use `analyze_with_llm(event: dict, matched_rules: list, severity: dict) -> dict`
-to produce a structured analysis for one screened and graded event.
-
-By default, the skill runs in Mock mode and does not require `OPENAI_API_KEY`.
-If `OPENAI_API_KEY` is present, the module has a reserved real-LLM integration
-point, but the local demo and tests still run without external API dependency.
-
-The returned dictionary contains:
-
-- `summary`: concise event-level analysis summary
-- `scenario_description`: scenario and key driving-signal context
-- `possible_causes`: at least two possible causes derived from event data and matched rules
-- `risk_assessment`: severity-aware risk explanation
-- `recommendations`: at least two follow-up recommendations
-- `need_human_review`: `True` for `S` or `A` severity levels
-
-AI analysis checks can be run from the repository root:
-
-```bash
-python -m compileall backend
-python -m pytest backend/tests/test_llm_analyzer.py
-```
-
-## Agent Workflow Orchestrator
-
-The lightweight Agent Orchestrator is implemented in
-`backend/agent_orchestrator.py`. It coordinates the backend skills in this
-fixed workflow:
+## 7. Agent 工作流
 
 ```text
+输入 event_id
+   |
+   v
 load_event(event_id)
--> rule_screening(event)
--> severity_grading(event, matched_rules)
--> llm_analysis(event, matched_rules, severity)
--> report_generation(event, matched_rules, severity, ai_analysis)
+   |
+   v
+rule_screening(event)
+   |
+   v
+severity_grading(event, matched_rules)
+   |
+   v
+llm_analysis(event, matched_rules, severity)
+   |
+   v
+report_generation(event, matched_rules, severity, ai_analysis)
+   |
+   v
+返回分析结果并保存 Markdown 报告
 ```
 
-Use `analyze_event(event_id: str) -> dict` to run the full pipeline for one
-event. A successful result contains:
+对应实现位于 `backend/agent_orchestrator.py`，核心入口为：
+
+```python
+analyze_event(event_id: str) -> dict
+```
+
+成功结果包含：
 
 - `event`
 - `matched_rules`
@@ -245,24 +115,239 @@ event. A successful result contains:
 - `report`
 - `report_path`
 
-If the event ID does not exist, `analyze_event` returns an explicit error
-dictionary with `error`, `event_id`, and `message`.
+## 8. 数据字段说明
 
-Reports are generated as Markdown and saved automatically under
-`reports/{event_id}_report.md`.
+模拟数据文件：`data/demo_events.csv`
 
-Run the orchestrator from the repository root:
+| 字段 | 说明 |
+| --- | --- |
+| `event_id` | 事件唯一 ID，例如 `EVT_0001` |
+| `vehicle_id` | 模拟车辆 ID |
+| `timestamp` | 事件发生时间 |
+| `scene_type` | 驾驶场景类型 |
+| `weather` | 天气 |
+| `road_type` | 道路类型 |
+| `ego_speed` | 自车速度 |
+| `brake_acc` | 制动加速度 |
+| `steering_angle` | 方向盘转角 |
+| `takeover` | 是否发生人工接管 |
+| `aeb_triggered` | 是否触发 AEB |
+| `lane_confidence` | 车道线置信度 |
+| `object_type` | 目标类型 |
+| `object_confidence` | 目标识别置信度 |
+| `ttc` | Time To Collision，碰撞时间 |
+| `lateral_offset` | 横向偏移 |
+| `perception_status` | 感知状态 |
+| `planning_status` | 规划状态 |
+| `log_text` | 模拟事件描述文本 |
+
+`backend/skills/data_loader.py` 会把数值字段转换为 `float`，把 `takeover` 和 `aeb_triggered` 转换为 `bool`。
+
+## 9. 规则引擎说明
+
+规则引擎实现文件：`backend/skills/rule_engine.py`
+
+核心函数：
+
+```python
+screen_event_rules(event: dict) -> list
+```
+
+当前规则集：
+
+| Rule ID | 规则含义 | 触发条件 |
+| --- | --- | --- |
+| `R001` | 急制动 | `brake_acc <= -3.5` |
+| `R002` | AEB 触发 | `aeb_triggered == True` |
+| `R003` | 疑似误刹 | `aeb_triggered == True` 且 `object_confidence < 0.5` 且 `brake_acc <= -3.0` |
+| `R004` | 高风险接管 | `takeover == True` 且 `ego_speed > 40` |
+| `R005` | 车道线异常 | `lane_confidence < 0.4` 且 `lateral_offset > 0.5` |
+| `R006` | TTC 过低 | `ttc <= 1.5` |
+| `R007` | 规划异常 | `planning_status` 包含 `abnormal` 或 `deviation` |
+| `R008` | 感知异常 | `perception_status` 包含 `unstable`、`lost` 或 `low_confidence` |
+
+每条命中规则返回 `rule_id`、`rule_name`、`description`、`evidence` 和 `risk_score`，用于后续分级、LLM 分析和报告生成。
+
+## 10. 严重度分级模型
+
+严重度分级实现文件：`backend/skills/severity_grader.py`
+
+核心函数：
+
+```python
+grade_severity(event: dict, matched_rules: list) -> dict
+```
+
+评分因子：
+
+| 因子 | 分值 |
+| --- | ---: |
+| `aeb_triggered == True` | +25 |
+| `takeover == True` | +25 |
+| `brake_acc <= -3.5` | +20 |
+| `ttc <= 1.5` | +20 |
+| `object_confidence < 0.5` | +10 |
+| 高风险场景 | +10 |
+
+等级映射：
+
+| 等级 | 分数范围 | 含义 |
+| --- | --- | --- |
+| `S` | `score >= 80` | 最高优先级，建议人工复核 |
+| `A` | `score >= 60` | 高风险，建议重点分析 |
+| `B` | `score >= 40` | 中风险，需要跟踪 |
+| `C` | `score >= 20` | 低风险，可常规分析 |
+| `D` | `score < 20` | 普通事件 |
+
+该模型用于 Demo 展示和初筛排序，不代表真实量产项目中的安全定级标准。
+
+## 11. AI 分析与报告生成
+
+AI 分析实现文件：`backend/skills/llm_analyzer.py`
+
+核心函数：
+
+```python
+analyze_with_llm(event: dict, matched_rules: list, severity: dict) -> dict
+```
+
+当前默认运行在 Mock LLM 模式，不依赖外部 API Key，也不会访问真实模型服务。模块会根据事件字段、规则命中和严重度结果生成：
+
+- `summary`：事件级摘要
+- `scenario_description`：场景与关键驾驶信号描述
+- `possible_causes`：可能原因
+- `risk_assessment`：风险判断
+- `recommendations`：后续处理建议
+- `need_human_review`：是否建议人工复核
+
+报告生成实现文件：`backend/skills/report_generator.py`
+
+核心函数：
+
+```python
+generate_markdown_report(event, matched_rules, severity, ai_analysis) -> str
+save_report(event_id, report_content) -> str
+```
+
+生成的报告会保存到 `reports/{event_id}_report.md`，内容包含事件基本信息、规则命中、严重度分级、AI 原因分析、关键证据、处理建议和人工复核建议。
+
+## 12. 页面截图占位
+
+当前仓库保留 `screenshots/` 目录用于 GitHub 展示截图。建议后续补充以下文件：
+
+| 截图文件 | 建议内容 |
+| --- | --- |
+| `screenshots/dashboard.png` | Dashboard，总事件数、风险分布、问题类型 Top 5、高风险事件列表 |
+| `screenshots/event-list.png` | 事件列表，展示场景、接管、AEB 筛选 |
+| `screenshots/event-detail.png` | 事件详情，展示关键指标、规则命中、严重度分级、AI 分析 |
+| `screenshots/report.png` | Markdown 报告页，展示复制和下载报告能力 |
+
+截图说明见 `screenshots/README.md`。
+
+## 13. 本地运行方式
+
+### 后端
+
+```bash
+cd autodrive-insight-agent/backend
+pip install -r requirements.txt
+uvicorn main:app --reload
+```
+
+健康检查：
+
+```bash
+curl http://127.0.0.1:8000/health
+```
+
+交互式 API 文档：
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### 前端
+
+```bash
+cd autodrive-insight-agent/frontend
+npm install
+npm run dev
+```
+
+Vite 本地地址：
+
+```text
+http://localhost:5173
+```
+
+### 命令行运行 Agent
+
+从仓库根目录执行：
 
 ```bash
 python backend/agent_orchestrator.py --event_id EVT_0001
 ```
 
-The command prints the analysis summary, severity, matched-rule count, and saved
-report path.
+## 14. API 接口说明
 
-Orchestrator checks can be run from the repository root:
+| Method | Endpoint | 说明 |
+| --- | --- | --- |
+| `GET` | `/health` | 后端健康检查 |
+| `GET` | `/api/events` | 获取事件列表 |
+| `GET` | `/api/events?takeover=true&aeb_triggered=true` | 按接管和 AEB 条件筛选事件 |
+| `GET` | `/api/events/{event_id}` | 获取单个事件详情 |
+| `POST` | `/api/analyze/{event_id}` | 执行完整 Agent 分析流程 |
+| `GET` | `/api/report/{event_id}` | 获取 Markdown 报告；如报告不存在会先自动生成 |
+
+`POST /api/analyze/{event_id}` 返回示例结构：
+
+```json
+{
+  "event": {},
+  "matched_rules": [],
+  "severity": {},
+  "ai_analysis": {},
+  "report": "Markdown content",
+  "report_path": "reports/EVT_0001_report.md"
+}
+```
+
+## 15. 测试方式
+
+后端测试依赖已写入 `backend/requirements.txt`。
+
+从仓库根目录运行：
 
 ```bash
 python -m compileall backend
-python -m pytest backend/tests/test_agent_orchestrator.py
+python -m pytest backend/tests
 ```
+
+也可以只运行单个模块测试：
+
+```bash
+python -m pytest backend/tests/test_data_loader.py
+python -m pytest backend/tests/test_rule_engine.py
+python -m pytest backend/tests/test_severity_grader.py
+python -m pytest backend/tests/test_llm_analyzer.py
+python -m pytest backend/tests/test_report_generator.py
+python -m pytest backend/tests/test_agent_orchestrator.py
+python -m pytest backend/tests/test_api.py
+```
+
+前端构建检查：
+
+```bash
+cd frontend
+npm run build
+```
+
+## 16. 项目亮点
+
+- 以智能驾驶量产回传数据分析为背景，覆盖事件筛选、风险识别、严重度排序和报告生成的完整链路。
+- 使用 Skill 模块拆分数据加载、规则筛选、分级、LLM 分析、报告生成，便于扩展和替换。
+- 规则引擎输出命中证据，避免只给结论，便于后续人工复核。
+- 严重度分级模型提供可解释的分数、等级、触发因子和分级原因。
+- LLM 分析模块默认 Mock 运行，保证本地演示和测试不依赖外部网络或 API Key。
+- Agent Orchestrator 将多个能力编排为稳定工作流，展示 AI Agent 在工程分析场景中的落地方式。
+- 前端提供 Dashboard、列表、详情和报告页，便于把后端分析结果转化为可演示的产品界面。
